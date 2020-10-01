@@ -1,12 +1,14 @@
-import { decorate, observable, autorun } from "mobx";
+import { decorate, observable } from "mobx";
 
 import SharedState from "./sharedState";
-import { NoIntantiateEmit, ISE, ExecutionSide } from "./constants";
+import { ISE, ExecutionSide } from "./constants";
 
 export const syncable = (mutableOn?: ExecutionSide) => <T extends SharedState>(
   target: T,
   property: keyof T
 ) => {
+  // @ts-ignore
+  if (!target.constructor.sharedKeys) target.constructor.sharedKeys = [];
   // @ts-ignore
   target.constructor.sharedKeys.push(property);
 };
@@ -18,6 +20,10 @@ export const syncableInRoom = (room: string, mutableOn?: ExecutionSide) => <
   property: keyof T
 ) => {
   // @ts-ignore
+  if (!target.constructor.roomSharedKeys)
+    // @ts-ignore
+    target.constructor.roomSharedKeys = [];
+  // @ts-ignore
   target.constructor.roomSharedKeys.push([property, room]);
 };
 
@@ -27,6 +33,10 @@ export const syncableInRooms = (mutableOn?: ExecutionSide) => <
   target: T,
   property: keyof T
 ) => {
+  // @ts-ignore
+  if (!target.constructor.roomsSharedKeys)
+    // @ts-ignore
+    target.constructor.roomsSharedKeys = [];
   // @ts-ignore
   target.constructor.roomsSharedKeys.push(property);
 };
@@ -45,7 +55,11 @@ const baseSyncMethod = (f: Function) => <T extends SharedState>(
   const old = target[property];
   propertyDescriptor.value = function(...args: any) {
     // @ts-ignore
+    this.emitter.emitOff();
+    // @ts-ignore
     const res = old.bind(this)(...args);
+    // @ts-ignore
+    this.emitter.emitOn();
     // @ts-ignore
     if (this.syncEnabled && !this.oneTimeSyncDisabled) {
       f.bind(this)(target, property, ...args);
@@ -117,7 +131,8 @@ export const shareableState = (clazz: any) => {
   decorate(
     clazz,
     (() => {
-      const decoration = clazz.sharedKeys.reduce(
+      clazz.instances = {};
+      const decoration = (clazz.sharedKeys || []).reduce(
         (acc: { [key: string]: typeof observable }, key: string) => {
           acc[key] = observable;
           return acc;

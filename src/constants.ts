@@ -16,6 +16,7 @@ export enum InternalSocketEventNames {
   Mutation = "mutation",
   MutationInRoom = "mutation in room",
   MutationInRooms = "mutation in rooms",
+  SyncRequest = "sync request",
 }
 
 export enum ExecutionSide {

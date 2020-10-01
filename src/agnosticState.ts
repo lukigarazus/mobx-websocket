@@ -1,5 +1,3 @@
-import SharedState from "./sharedState";
-
 /**
  * Utility class to abstract away repeating code
  */

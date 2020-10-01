@@ -1,6 +1,6 @@
-import ClientState from "./clientState";
+import ClientState from "./client/state";
 import SharedState from "./sharedState";
-import ServerState from "./serverState";
+import ServerState from "./server/state";
 import {
   sync,
   syncInRoom,
@@ -10,6 +10,7 @@ import {
   syncableInRooms,
   shareableState,
 } from "./decorators";
+import AgnosticEmitter from "./agnosticEmitter";
 import { ExecutionSide, NoIntantiateEmit } from "./constants";
 
 export const generateID = () => {
@@ -33,4 +34,5 @@ export {
   shareableState,
   ExecutionSide,
   NoIntantiateEmit,
+  AgnosticEmitter,
 };

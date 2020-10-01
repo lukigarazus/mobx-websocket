@@ -1,8 +1,8 @@
 import { Socket } from "socket.io";
 
-import { InternalSocketEventNames, ISE } from "./constants";
-import ClientState from "./clientState";
-import ServerState from "./serverState";
+import { InternalSocketEventNames, ISE, NoIntantiateEmit } from "./constants";
+import ClientState from "./client/state";
+import ServerState from "./server/state";
 import SharedState from "./sharedState";
 import { IChangeMethod, ISyncState, IMutation } from "./types";
 
@@ -108,7 +108,7 @@ export const handlers: IHandlers = wrapMethods(
             //   id: data.id,
             //   className: data.className,
             // });
-            socket.emit(ISE.ServerSyncState, {
+            this.emitter.emitToRoom(socket.id, ISE.ServerSyncState, {
               id: data.id,
               className: data.className,
               syncStateObject: serverInstance.getSyncStateObject(Constructor),
@@ -118,7 +118,6 @@ export const handlers: IHandlers = wrapMethods(
               ...data.arguments,
               emitter: this.emitter,
               id: data.id,
-              // @ts-ignore
               [NoIntantiateEmit]: true,
             });
             this.classes[data.className].instances[data.id] = instance;
@@ -191,13 +190,34 @@ export const handlers: IHandlers = wrapMethods(
         if (data.id) {
           const Constructor = this.classes[data.className];
           const clientInstance = Constructor.instances[data.id];
+          clientInstance.emitter.emitOff();
           clientInstance.syncOff();
           if (clientInstance)
             clientInstance.handleSyncStateObject(data.syncStateObject);
+          clientInstance.emitter.emitOn();
           clientInstance.syncOn();
         }
       },
       server: () => function() {},
+    },
+    [InternalSocketEventNames.SyncRequest]: {
+      server: (socket) =>
+        function(data: IChangeMethod) {
+          if (data.id) {
+            const Constructor = this.classes[data.className];
+            const serverInstance = Constructor.instances[data.id];
+            const syncObj = serverInstance.getSyncStateObject();
+            serverInstance.emitter.emitToRoom(
+              socket.id,
+              InternalSocketEventNames.ServerSyncState,
+              {
+                id: data.id,
+                className: data.className,
+                syncStateObject: syncObj,
+              }
+            );
+          }
+        },
     },
   }
 );

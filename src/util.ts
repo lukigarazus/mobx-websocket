@@ -22,3 +22,13 @@ export const guardExecutionSide = (
     );
   }
 };
+
+export const checkIfServer = () => {
+  try {
+    // @ts-ignore
+    window;
+    return false;
+  } catch {
+    return true;
+  }
+};
